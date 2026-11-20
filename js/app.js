@@ -6,6 +6,8 @@
   const LAT = 33.749, LON = -84.388;
   const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
 
+  document.body.classList.toggle('cb', store.get('palette', 'std') === 'cb'); // set early, before first paint of tags and map
+
   const NEEDS = [
     ['wheel', 'Wheelchair or scooter'], ['walk', "Can't walk far"], ['sight', 'Low vision or blind'],
     ['hear', 'Deaf or hard of hearing'], ['easy', 'Plain, simple words']
@@ -116,10 +118,13 @@
   }
 
   /* ---------- accessibility tiers (SUNDIAL's measured / blended / borrowed idea) ---------- */
+  // [css class, word, symbol]. Symbol plus word, so colour is never the only cue.
   const TIER = {
-    1: ['t1', 'Step-free access reported'], 2: ['t2', 'Partly accessible'], '-1': ['t3', 'Access not reported: call first'], 0: ['t0', 'Reported not accessible']
+    1: ['t1', 'Step-free', '✓'], 2: ['t2', 'Partly', '◐'], '-1': ['t3', 'Not reported', '?'], 0: ['t0', 'Not accessible', '✕']
   };
   const tierOf = (p) => TIER[p.wc];
+  const tl = (t) => `${t[2]} ${t[1]}`;                                   // plain text: "✓ Step-free"
+  const tierHTML = (t) => `<span aria-hidden="true">${t[2]}</span> ${t[1]}`; // symbol hidden from screen readers
 
   /* ---------- opening hours (small parser for the common OSM patterns) ---------- */
   function openNow(oh, h) {
@@ -174,7 +179,7 @@
     S.results.forEach((r, i) => {
       const t = tierOf(r.p), o = openNow(r.p.h, S.hour), li = document.createElement('li');
       li.innerHTML = `<button type="button" data-i="${i}"><span class="nm">${esc(r.p.n)}</span><span class="dist">${miText(r.d)}</span>
-        <span class="meta"><span class="tag ${t[0]}">${t[1]}</span>${o === true ? '<span class="tag open">Open at this time</span>' : o === false ? '<span class="tag shut">Closed at this time</span>' : ''}${r.p.a ? esc(r.p.a) : ''}</span></button>`;
+        <span class="meta"><span class="tag ${t[0]}">${tierHTML(t)}</span>${o === true ? '<span class="tag open"><span aria-hidden="true">●</span> Open at this time</span>' : o === false ? '<span class="tag shut"><span aria-hidden="true">○</span> Closed at this time</span>' : ''}${r.p.a ? esc(r.p.a) : ''}</span></button>`;
       ol.appendChild(li);
     });
     $('#res-note').textContent = 'Access labels come from OpenStreetMap volunteers. "Not reported" means nobody has recorded it. Always call ahead.';
@@ -183,7 +188,7 @@
   /* ---------- the place sheet ---------- */
   function openPlace(r) {
     S.selected = r; const p = r.p, t = tierOf(p), ns = nearestStop(p.la, p.lo), o = openNow(p.h, S.hour), f = Math.round(feels()), a = weatherAdvice();
-    const tier = $('#s-tier'); tier.textContent = t[1]; tier.className = 'tier ' + t[0];
+    const tier = $('#s-tier'); tier.innerHTML = tierHTML(t); tier.className = 'tier ' + t[0];
     $('#sheet-name').textContent = p.n;
     $('#s-sub').textContent = `${miText(r.d)} from ${S.origin.label}${p.a ? ' · ' + p.a : ''}`;
     $('#s-dir').href = `https://www.google.com/maps/dir/?api=1&destination=${p.la},${p.lo}&travelmode=transit`;
@@ -203,7 +208,7 @@
       card('Is it open?', `<p><b>${o === true ? 'Open at ' + hmm(S.hour) + ' today.' : o === false ? 'Closed at ' + hmm(S.hour) + '.' : 'Hours not listed in our data.'}</b></p>${p.h ? `<p>Listed hours: ${esc(p.h)}</p>` : ''}${p.p ? `<p>Phone: <a href="tel:${esc(p.p.replace(/[^+\d]/g, ''))}">${esc(p.p)}</a></p>` : '<p>No phone number listed. Search the name and call to confirm.</p>'}`) +
       card('At ' + hmm(S.hour), `<p><b>Feels like ${f}°F, ${isDay(S.hour, S.month) ? 'daylight' : 'dark'}.</b></p><p>${esc(a.text)}</p><p>${E ? 'Easiest time' : 'Easiest time in ' + MON[S.month - 1]}: around ${hmm(best)}.</p>`) +
       card('Getting there', `<ul>${getting.join('')}</ul>`) +
-      card('Access for you', `<p><b>${t[1]}.</b></p>${tips.length ? '<ul>' + tips.map((x) => `<li>${x}</li>`).join('') + '</ul>' : ''}<p class="note">From OpenStreetMap volunteers. Call to confirm: access changes and elevators break.</p>`);
+      card('Access for you', `<p><b>${tl(t)}.</b></p>${tips.length ? '<ul>' + tips.map((x) => `<li>${x}</li>`).join('') + '</ul>' : ''}<p class="note">From OpenStreetMap volunteers. Call to confirm: access changes and elevators break.</p>`);
     const sh = $('#sheet'); sh.classList.add('open'); sh.setAttribute('aria-hidden', 'false'); document.body.classList.add('sheet-open');
     $('#sheet-scroll').scrollTop = 0; $('#sheet-back').focus();
     S.lastFocus = document.activeElement;
@@ -223,10 +228,15 @@
     c.width = r.width * dpr; c.height = r.height * dpr; mp.w = r.width; mp.h = r.height; mp.dpr = dpr;
     mp.proj = d3.geoMercator().fitExtent([[12, 12], [mp.w - 12, mp.h - 12]], { type: 'FeatureCollection', features: S.counties.features });
   }
-  const COL = { 1: '#3ecb6a', 2: '#ffc65a', '-1': '#b8afa0', 0: '#ff6b5e' };
+  // Marker colours per palette. cb = Okabe-Ito; number text is chosen so every label is >= 4.5:1.
+  const MARK = {
+    std: { 1: '#3ecb6a', 2: '#ffc65a', '-1': '#b8afa0', 0: '#ff6b5e', rail: '#7db2ff', origin: '#ff6a1a', halo: '#000', txt: { 1: '#000', 2: '#000', '-1': '#000', 0: '#000' } },
+    cb: { 1: '#0072B2', 2: '#E69F00', '-1': '#999999', 0: '#D55E00', rail: '#56B4E9', origin: '#ffffff', halo: '#000', txt: { 1: '#fff', 2: '#000', '-1': '#000', 0: '#000' } }
+  };
+  const markSet = () => MARK[document.body.classList.contains('cb') ? 'cb' : 'std'];
   function drawMap() {
     if (!S.counties) return; const c = $('#map'), g = c.getContext('2d'), k = mp.t.k; if (!mp.proj) mapSetup();
-    g.setTransform(mp.dpr, 0, 0, mp.dpr, 0, 0); g.clearRect(0, 0, mp.w, mp.h);
+    g.setTransform(mp.dpr, 0, 0, mp.dpr, 0, 0); g.clearRect(0, 0, mp.w, mp.h); g.textBaseline = 'alphabetic';
     g.fillStyle = '#1a1511'; g.fillRect(0, 0, mp.w, mp.h);
     g.save(); g.translate(mp.t.x, mp.t.y); g.scale(k, k);
     const path = d3.geoPath(mp.proj, g); g.lineWidth = 1 / k;
@@ -235,9 +245,27 @@
     const P = (la, lo) => { const q = mp.proj([lo, la]); return [q[0] * k + mp.t.x, q[1] * k + mp.t.y]; };
     g.fillStyle = 'rgba(243,234,217,0.7)'; g.font = '600 11px Hanken Grotesk, sans-serif'; g.textAlign = 'center';
     S.counties.features.forEach((f) => { const q = d3.geoPath(mp.proj).centroid(f); g.fillText(f.properties.name, q[0] * k + mp.t.x, q[1] * k + mp.t.y); });
-    S.marta.stations.filter((s) => s.rail).forEach((s) => { const [x, y] = P(s.lat, s.lon); g.fillStyle = '#7db2ff'; g.fillRect(x - 3.5, y - 3.5, 7, 7); if (k > 3) { g.fillStyle = '#cfe2ff'; g.fillText(s.name.replace(' Station', ''), x, y - 7); } });
-    S.results.forEach((r, i) => { const [x, y] = P(r.p.la, r.p.lo); r.sx = x; r.sy = y; g.beginPath(); g.arc(x, y, 8, 0, 7); g.fillStyle = COL[r.p.wc]; g.fill(); g.lineWidth = 2; g.strokeStyle = '#000'; g.stroke(); g.fillStyle = '#000'; g.font = '800 10px sans-serif'; g.fillText(i + 1, x, y + 3.5); });
-    if (S.origin) { const [x, y] = P(S.origin.lat, S.origin.lon); g.beginPath(); g.arc(x, y, 7, 0, 7); g.fillStyle = '#ff6a1a'; g.fill(); g.lineWidth = 3; g.strokeStyle = '#fff'; g.stroke(); }
+    const M = markSet();
+    // Rail stations: small bars (not a tier shape, so they never look like a result marker).
+    S.marta.stations.filter((s) => s.rail).forEach((s) => { const [x, y] = P(s.lat, s.lon); g.fillStyle = M.rail; g.fillRect(x - 5, y - 2, 10, 4); if (k > 3) { g.fillStyle = '#cfe2ff'; g.fillText(s.name.replace(' Station', ''), x, y - 7); } });
+    // Result markers: shape = tier (circle step-free, diamond partly, triangle not reported, square with X not accessible), number inside.
+    const R = 10;
+    S.results.forEach((r, i) => {
+      const [x, y] = P(r.p.la, r.p.lo); r.sx = x; r.sy = y;
+      const w = r.p.wc === 1 || r.p.wc === 2 || r.p.wc === 0 ? r.p.wc : -1;
+      g.beginPath();
+      if (w === 1) g.arc(x, y, R, 0, 7);
+      else if (w === 2) { g.moveTo(x, y - R * 1.25); g.lineTo(x + R, y); g.lineTo(x, y + R * 1.25); g.lineTo(x - R, y); g.closePath(); }
+      else if (w === -1) { g.moveTo(x, y - R * 1.2); g.lineTo(x + R * 1.1, y + R * 0.9); g.lineTo(x - R * 1.1, y + R * 0.9); g.closePath(); }
+      else g.rect(x - R * 0.9, y - R * 0.9, R * 1.8, R * 1.8);
+      g.fillStyle = M[w] || M['-1']; g.fill(); g.lineWidth = 2; g.strokeStyle = M.halo; g.stroke();
+      if (w === 0) { g.beginPath(); g.moveTo(x - R * 0.6, y - R * 0.6); g.lineTo(x + R * 0.6, y + R * 0.6); g.moveTo(x + R * 0.6, y - R * 0.6); g.lineTo(x - R * 0.6, y + R * 0.6); g.lineWidth = 1.6; g.strokeStyle = M.halo; g.stroke(); }
+      const ty = y + (w === -1 ? 2 : 0);
+      g.font = '800 10px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.lineWidth = 3; g.strokeStyle = M[w] || M['-1']; g.strokeText(i + 1, x, ty); // halo keeps the number clear of the X
+      g.fillStyle = M.txt[w] || '#000'; g.fillText(i + 1, x, ty);
+    });
+    if (S.origin) { const [x, y] = P(S.origin.lat, S.origin.lon); g.beginPath(); g.arc(x, y, 12, 0, 7); g.lineWidth = 3; g.strokeStyle = M.origin; g.stroke(); g.beginPath(); g.arc(x, y, 4, 0, 7); g.fillStyle = M.origin; g.fill(); }
   }
   function mapInit() {
     mapSetup();
@@ -246,6 +274,18 @@
     sel.on('click', (e) => { const [x, y] = d3.pointer(e); let b = null; S.results.forEach((r, i) => { const d = Math.hypot(r.sx - x, r.sy - y); if (d < 20 && (!b || d < b.d)) b = { d, i }; }); if (b) { S.btn = document.querySelector(`#board button[data-i="${b.i}"]`); openPlace(S.results[b.i]); } });
     window.addEventListener('resize', () => { mp.proj = null; drawMap(); });
   }
+
+  /* ---------- hook for the mouse reader (js/a11y.js) ---------- */
+  window.ATL = {
+    // Nearest result marker to a canvas point (CSS px) within maxPx, or null.
+    nearestResult(x, y, maxPx = 30) {
+      let best = null;
+      S.results.forEach((r, i) => { if (r.sx == null) return; const d = Math.hypot(r.sx - x, r.sy - y); if (d <= maxPx && (!best || d < best.d)) best = { d, i }; });
+      if (!best) return null;
+      const r = S.results[best.i];
+      return { number: best.i + 1, name: r.p.n, distance: miText(r.d), access: tl(tierOf(r.p)), d: best.d };
+    }
+  };
 
   /* ---------- UI wiring ---------- */
   function chips(el, list, pressed, on) {
@@ -285,6 +325,10 @@
     const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) links.forEach((a, i) => a.classList.toggle('on', secs[i] === e.target)); }), { rootMargin: '-40% 0px -50% 0px' });
     secs.forEach((s) => io.observe(s));
     buildDial(); buildCurve(); paintTime(); mapInit(); compute();
+    // colour palette: Standard / Colorblind-safe
+    const pal = $('#t-color');
+    const applyPal = (v) => { document.body.classList.toggle('cb', v === 'cb'); pal.value = v; store.set('palette', v); drawMap(); };
+    pal.onchange = () => applyPal(pal.value); applyPal(store.get('palette', 'std') === 'cb' ? 'cb' : 'std');
   }
 
   const get = (p) => fetch(p).then((r) => { if (!r.ok) throw new Error(p + ' ' + r.status); return r.json(); });
