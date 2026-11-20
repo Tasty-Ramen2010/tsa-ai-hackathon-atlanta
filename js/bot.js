@@ -1,29 +1,29 @@
-/* SUNDIAL ATL assistant widget. Talks to the AGX-hosted model through chat/bot.py (Tailscale Funnel). Replies are shown as plain text only. */
+/* ATL Access assistant widget. Talks to the AGX-hosted model through chat/bot.py (Tailscale Funnel). Replies are shown as plain text only. */
 (function () {
   const URL = window.ATL_BOT_URL || 'https://agx-orin.tail705d7c.ts.net:8443';
   const ld = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
   const css = document.createElement('style');
   css.textContent = `
-  #bot-btn{position:fixed;right:max(1rem,env(safe-area-inset-right));bottom:6.2rem;z-index:35;min-height:3.4rem;padding:0 1.3rem;border-radius:99px;border:2px solid #fff;background:var(--emberDeep,#b8420a);color:#fff;font:700 1.05rem var(--sans,sans-serif);cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.35)}
-  #bot{position:fixed;z-index:70;right:max(.8rem,env(safe-area-inset-right));bottom:.8rem;width:min(30rem,calc(100vw - 1.6rem));max-height:min(46rem,calc(100svh - 1.6rem));display:none;flex-direction:column;background:#fffaf0;color:#1c1510;border:3px solid #1c1510;border-radius:22px;box-shadow:0 12px 48px rgba(0,0,0,.5);font:400 1.1rem/1.45 var(--sans,sans-serif)}
+  #bot-btn{position:fixed;right:max(1rem,env(safe-area-inset-right));bottom:1.2rem;z-index:35;min-height:3.4rem;padding:0 1.3rem;border-radius:99px;border:2px solid #fff;background:var(--accent,#0b5cad);color:#fff;font:700 1.05rem var(--sans,sans-serif);cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+  #bot{position:fixed;z-index:70;right:max(.8rem,env(safe-area-inset-right));bottom:.8rem;width:min(30rem,calc(100vw - 1.6rem));max-height:min(46rem,calc(100svh - 1.6rem));display:none;flex-direction:column;background:#fff;color:#1c1510;border:3px solid #1c1510;border-radius:22px;box-shadow:0 12px 48px rgba(0,0,0,.5);font:400 1.1rem/1.45 var(--sans,sans-serif)}
   #bot.open{display:flex} body.hc #bot{background:#fff;border-color:#000}
   #bot header{display:flex;align-items:center;gap:.5rem;padding:.7rem .9rem;border-bottom:2px solid #1c1510}
   #bot h2{font:700 1.15rem var(--sans,sans-serif);margin:0;flex:1}
   #bot header button,#bot .row button{font:700 1rem var(--sans,sans-serif);min-height:2.75rem;min-width:2.75rem;padding:0 .9rem;border-radius:99px;border:2px solid #1c1510;background:#fff;color:#1c1510;cursor:pointer}
   #bot-log{flex:1;overflow-y:auto;padding:.8rem .9rem;display:flex;flex-direction:column;gap:.6rem;min-height:9rem}
   #bot-log p{margin:0;padding:.6rem .8rem;border-radius:16px;max-width:92%;white-space:pre-wrap;overflow-wrap:anywhere}
-  #bot-log .me{align-self:flex-end;background:#1c1510;color:#fff} #bot-log .ai{align-self:flex-start;background:#f0e4cc;border:2px solid #1c1510}
+  #bot-log .me{align-self:flex-end;background:#1c1510;color:#fff} #bot-log .ai{align-self:flex-start;background:#eaf2fb;border:2px solid #1c1510}
   #bot .sug{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 .9rem .5rem} #bot .sug button{font:600 .95rem var(--sans,sans-serif);min-height:2.6rem;padding:.2rem .8rem;border-radius:99px;border:2px solid #1c1510;background:#fff;cursor:pointer}
   #bot form{display:flex;gap:.4rem;padding:.6rem .9rem;border-top:2px solid #1c1510} #bot input[type=text]{flex:1;min-width:0;font:400 1.1rem var(--sans,sans-serif);min-height:3rem;padding:0 .8rem;border-radius:14px;border:2px solid #1c1510;background:#fff;color:#1c1510}
-  #bot form button{min-height:3rem;padding:0 1rem;border-radius:14px;border:2px solid #1c1510;background:var(--emberDeep,#b8420a);color:#fff;font:700 1rem var(--sans,sans-serif);cursor:pointer}
+  #bot form button{min-height:3rem;padding:0 1rem;border-radius:14px;border:2px solid #084783;background:var(--accent,#0b5cad);color:#fff;font:700 1rem var(--sans,sans-serif);cursor:pointer}
   #bot .row{display:flex;align-items:center;gap:.6rem;padding:0 .9rem .6rem;font-size:.9rem} #bot .note{font-size:.8rem;padding:0 .9rem .7rem;margin:0;color:#4d4439}
   #bot :focus-visible,#bot-btn:focus-visible{outline:3px solid #ffc65a;outline-offset:2px;box-shadow:0 0 0 5px #000}
   @media print{#bot,#bot-btn{display:none!important}}`;
   document.head.appendChild(css);
 
-  const btn = document.createElement('button'); btn.id = 'bot-btn'; btn.type = 'button'; btn.textContent = 'Ask SUNDIAL'; btn.setAttribute('aria-haspopup', 'dialog'); btn.setAttribute('aria-expanded', 'false');
-  const box = document.createElement('section'); box.id = 'bot'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Ask SUNDIAL, the helper'); box.setAttribute('aria-modal', 'false');
-  box.innerHTML = `<header><h2>Ask SUNDIAL</h2><button type="button" id="bot-clear">Clear</button><button type="button" id="bot-x" aria-label="Close helper">Close</button></header>
+  const btn = document.createElement('button'); btn.id = 'bot-btn'; btn.type = 'button'; btn.textContent = 'Ask the helper'; btn.setAttribute('aria-haspopup', 'dialog'); btn.setAttribute('aria-expanded', 'false');
+  const box = document.createElement('section'); box.id = 'bot'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Ask the helper'); box.setAttribute('aria-modal', 'false');
+  box.innerHTML = `<header><h2>Ask the helper</h2><button type="button" id="bot-clear">Clear</button><button type="button" id="bot-x" aria-label="Close helper">Close</button></header>
     <div id="bot-log" role="log" aria-live="polite" aria-label="Conversation"></div>
     <div class="sug" id="bot-sug"></div>
     <div class="row"><label><input type="checkbox" id="bot-say"> Read answers aloud</label><button type="button" id="bot-mic" hidden aria-label="Speak your question">🎤 Speak</button></div>

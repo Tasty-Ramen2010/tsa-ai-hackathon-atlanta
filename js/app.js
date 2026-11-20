@@ -1,4 +1,4 @@
-/* SUNDIAL ATL app. Reuses SUNDIAL's sky (js/sky.js), sheet, dock and data-confidence idea. */
+/* ATL Access app: planner, results, map and place sheet. */
 (function () {
   const d3 = window.d3, $ = (s) => document.querySelector(s);
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -38,7 +38,8 @@
   /* ---------- weather and light at the chosen hour ---------- */
   const hourIdx = () => Math.floor(S.hour) % 24;
   const feels = (h = S.hour, m = S.month) => S.climate ? S.climate.feels[m - 1][Math.floor(h) % 24] : 70;
-  const isDay = (h, m) => SKY.sunAlt(LAT, m, h + (isDST(m) ? -1 : 0)) > -0.8;
+  const sunAlt = (latDeg, month, hour) => { const doy = (month - 1) * 30.4 + 15, dec = (23.44 * Math.PI / 180) * Math.sin((2 * Math.PI / 365) * (doy - 80)), phi = latDeg * Math.PI / 180, H = (hour - 12) * 15 * Math.PI / 180; return Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H)) * 180 / Math.PI; };
+  const isDay = (h, m) => sunAlt(LAT, m, h + (isDST(m) ? -1 : 0)) > -0.8;
   /* Clock hour is local civil time. Atlanta is on daylight time roughly March-October, so solar hour is 1 earlier. */
   const isDST = (m) => m >= 4 && m <= 10 || m === 3 && false;
   function sunTimes(m) { let rise = null, set = null, prev = isDay(0, m); for (let h = 0.25; h <= 24; h += 0.25) { const c = isDay(h, m); if (!prev && c && rise == null) rise = h; if (prev && !c && set == null) set = h; prev = c; } return { rise, set }; }
@@ -64,30 +65,7 @@
     return { text: out.join(' '), cls };
   }
 
-  /* ---------- hero: sky, dial, curve ---------- */
-  function paintSky() {
-    const f = feels(), heat = clamp((f - 84) / 22, 0, 1);
-    const sk = SKY.sky(LAT, S.month, S.hour + (isDST(S.month) ? -1 : 0), heat);
-    const g = SKY.gradient(sk);
-    $('#sky').style.background = g;
-    $('#sheet').style.setProperty('--skybg', SKY.css(sk.mid));
-    $('meta[name=theme-color]').content = SKY.css(sk.top);
-  }
-  function buildDial() {
-    const svg = d3.select('#dial'); svg.selectAll('*').remove();
-    const c = 110, r = 92, ang = (h) => (h / 24) * 2 * Math.PI - Math.PI; // midnight at bottom
-    const pt = (h, rr) => [c + rr * Math.sin(ang(h) + Math.PI), c - rr * Math.cos(ang(h) + Math.PI)];
-    svg.append('circle').attr('class', 'ring').attr('cx', c).attr('cy', c).attr('r', r);
-    const st = sunTimes(S.month);
-    const arc = (a, b, cls) => { if (a == null || b == null) return; const p = pt(a, r), q = pt(b, r); svg.append('path').attr('class', cls).attr('d', `M${c},${c}L${p[0]},${p[1]}A${r},${r} 0 ${b - a > 12 ? 1 : 0} 1 ${q[0]},${q[1]}Z`); };
-    arc(0, 24, 'night'); arc(st.rise, st.set, 'day');
-    for (let h = 0; h < 24; h += 3) { const a = pt(h, r - 8), b = pt(h, r); svg.append('line').attr('class', 'tk').attr('x1', a[0]).attr('y1', a[1]).attr('x2', b[0]).attr('y2', b[1]); }
-    [[0, '12 AM'], [6, '6 AM'], [12, 'Noon'], [18, '6 PM']].forEach(([h, t]) => { const p = pt(h, r - 20); svg.append('text').attr('x', p[0]).attr('y', p[1] + 4).text(t); });
-    svg.append('line').attr('class', 'gn').attr('id', 'gnomon').attr('x1', c).attr('y1', c);
-    svg.append('circle').attr('cx', c).attr('cy', c).attr('r', 6).attr('fill', '#f3ead9');
-    svg.node().__pt = pt; moveGnomon();
-  }
-  function moveGnomon() { const p = $('#dial').__pt(S.hour, 84); $('#gnomon').setAttribute('x2', p[0]); $('#gnomon').setAttribute('y2', p[1]); }
+  /* ---------- hero: curve ---------- */
   function buildCurve() {
     const W = 640, H = 200, m = { l: 36, r: 10, t: 12, b: 28 }, el = $('#curve'); el.innerHTML = '';
     const fs = S.climate.feels[S.month - 1], lo = Math.min(30, Math.min(...fs) - 3), hi = Math.max(100, Math.max(...fs) + 3);
@@ -114,10 +92,10 @@
     const b = bestHours();
     $('#bestline').textContent = `Easiest time to be outside in ${MON[S.month - 1]}: around ${hmm(b)}.`;
     $('#hour').setAttribute('aria-valuetext', hmm(S.hour));
-    paintSky(); moveGnomon(); moveCurve();
+    moveCurve();
   }
 
-  /* ---------- accessibility tiers (SUNDIAL's measured / blended / borrowed idea) ---------- */
+  /* ---------- accessibility tiers (how sure we are about access) ---------- */
   // [css class, word, symbol]. Symbol plus word, so colour is never the only cue.
   const TIER = {
     1: ['t1', 'Step-free', '✓'], 2: ['t2', 'Partly', '◐'], '-1': ['t3', 'Not reported', '?'], 0: ['t0', 'Not accessible', '✕']
@@ -297,7 +275,7 @@
       if (Number.isInteger(a.month) && a.month >= 1 && a.month <= 12) S.month = a.month;
       // Refresh the page exactly as the controls do.
       $('#month').value = S.month; $('#hour').value = S.hour;
-      renderChips(); buildDial(); buildCurve(); paintTime(); compute();
+      renderChips(); buildCurve(); paintTime(); compute();
       const rs = $('#res-sub'); rs.textContent = 'Results updated. ' + rs.textContent; // aria-live announces it
       const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
       $('#results').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
@@ -321,7 +299,7 @@
   function renderChips() { chips($('#needs'), NEEDS, (id) => S.needs.has(id), onNeed); chips($('#kinds'), KINDS, (id) => S.kind === id, onKind); }
   function init() {
     const mo = $('#month'); MON.forEach((m, i) => mo.add(new Option(m, i + 1))); mo.value = S.month;
-    mo.onchange = () => { S.month = +mo.value; buildDial(); buildCurve(); paintTime(); compute(); };
+    mo.onchange = () => { S.month = +mo.value; buildCurve(); paintTime(); compute(); };
     const hr = $('#hour'); hr.value = S.hour;
     hr.oninput = () => { S.hour = +hr.value; store.set('hour', S.hour); paintTime(); };
     hr.onchange = () => compute();
@@ -346,11 +324,7 @@
     $('#t-plus').onclick = () => { ts = Math.min(2, ts + 1); ap(); }; $('#t-minus').onclick = () => { ts = Math.max(-1, ts - 1); ap(); }; ap();
     const hc = $('#t-contrast'); const sh = (v) => { document.body.classList.toggle('hc', v); hc.setAttribute('aria-pressed', v); store.set('hc', v); };
     hc.onclick = () => sh(!document.body.classList.contains('hc')); sh(store.get('hc', matchMedia('(prefers-contrast: more)').matches));
-    // dock highlight
-    const links = [...document.querySelectorAll('#dock a')], secs = links.map((a) => document.querySelector(a.getAttribute('href')));
-    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) links.forEach((a, i) => a.classList.toggle('on', secs[i] === e.target)); }), { rootMargin: '-40% 0px -50% 0px' });
-    secs.forEach((s) => io.observe(s));
-    buildDial(); buildCurve(); paintTime(); mapInit(); compute();
+    buildCurve(); paintTime(); mapInit(); compute();
     // colour palette: Standard / Colorblind-safe
     const pal = $('#t-color');
     const applyPal = (v) => { document.body.classList.toggle('cb', v === 'cb'); pal.value = v; store.set('palette', v); drawMap(); };
@@ -361,6 +335,6 @@
   Promise.all([get('data/marta.json'), get('data/climate.json'), get('data/counties.geojson'), get('data/places.json').catch(() => ({ places: [] }))]).then(([m, c, g, p]) => {
     S.marta = m; S.climate = c; S.counties = g; S.places = p.places.map((x) => x); init();
     if (!S.places.length) $('#res-sub').textContent = 'Place data did not load. Please refresh.';
-    document.body.classList.remove('loading');
-  }).catch((e) => { console.error(e); document.body.classList.remove('loading'); document.querySelector('#plan').insertAdjacentHTML('afterbegin', '<p class="wrap"><b>Could not load data. Please refresh.</b></p>'); });
+    
+  }).catch((e) => { console.error(e);  document.querySelector('#plan').insertAdjacentHTML('afterbegin', '<p class="wrap"><b>Could not load data. Please refresh.</b></p>'); });
 })();

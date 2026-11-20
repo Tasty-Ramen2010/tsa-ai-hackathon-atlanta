@@ -1,7 +1,7 @@
-# SUNDIAL ATL assistant knowledge
+# ATL Access assistant knowledge
 
 ## About this site
-SUNDIAL ATL helps older adults and people with disabilities find accessible places in metro Atlanta and pick a good hour to go. You choose what helps you get around (wheelchair or scooter, cannot walk far, low vision or blind, deaf or hard of hearing, plain words), a type of place (pharmacy, hospital, clinic, library, senior center, community center, grocery, restroom), and a starting point. The site ranks places and shows how hot, cold or dark it will be at the time you choose.
+ATL Access helps older adults and people with disabilities find accessible places in metro Atlanta and pick a good hour to go. You choose what helps you get around (wheelchair or scooter, cannot walk far, low vision or blind, deaf or hard of hearing, plain words), a type of place (pharmacy, hospital, clinic, library, senior center, community center, grocery, restroom), and a starting point. The site ranks places and shows how hot, cold or dark it will be at the time you choose.
 
 ## How access labels work
 Each place shows one of four labels. Step-free access reported means volunteers on OpenStreetMap recorded the place as wheelchair accessible. Partly accessible means limited access. Reported not accessible means it was recorded as not accessible. Access not reported means nobody has recorded it, which is not the same as inaccessible. Always call ahead to confirm, because access changes and elevators break.
