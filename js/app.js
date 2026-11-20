@@ -284,22 +284,48 @@
       if (!best) return null;
       const r = S.results[best.i];
       return { number: best.i + 1, name: r.p.n, distance: miText(r.d), access: tl(tierOf(r.p)), d: best.d };
+    },
+    // Used by the helper (js/bot.js) to do the work for the user. The input comes from a server reply, so it is untrusted:
+    // every field is checked against an allow-list or range, and anything else is ignored.
+    apply(a) {
+      if (!a || typeof a !== 'object' || !S.climate || !S.origin) return false;
+      const kindIds = KINDS.map((k) => k[0]), needIds = NEEDS.map((n) => n[0]);
+      if (typeof a.kind === 'string' && kindIds.includes(a.kind)) { S.kind = a.kind; store.set('kind', S.kind); }
+      if (Array.isArray(a.needs_add)) a.needs_add.slice(0, 10).forEach((n) => { if (typeof n === 'string' && needIds.includes(n)) S.needs.add(n); });
+      store.set('needs', [...S.needs]);
+      if (typeof a.hour === 'number' && Number.isFinite(a.hour) && a.hour >= 0 && a.hour <= 23.5) { S.hour = Math.round(a.hour * 2) / 2; store.set('hour', S.hour); }
+      if (Number.isInteger(a.month) && a.month >= 1 && a.month <= 12) S.month = a.month;
+      // Refresh the page exactly as the controls do.
+      $('#month').value = S.month; $('#hour').value = S.hour;
+      renderChips(); buildDial(); buildCurve(); paintTime(); compute();
+      const rs = $('#res-sub'); rs.textContent = 'Results updated. ' + rs.textContent; // aria-live announces it
+      const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      $('#results').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      const t = $('#res-title'); t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true });
+      if (a.open_first === true && S.results.length) {
+        setTimeout(() => { S.btn = document.querySelector('#board button[data-i="0"]'); openPlace(S.results[0]); }, reduce ? 0 : 700);
+      }
+      return true;
     }
   };
+  // Same state the helper sends as context, so it can answer in the page's terms.
+  window.ATL_STATE = () => ({ kind: S.kind, needs: [...S.needs], hour: S.hour, ...(S.origin ? { lat: S.origin.lat, lon: S.origin.lon } : {}) });
 
   /* ---------- UI wiring ---------- */
   function chips(el, list, pressed, on) {
     el.innerHTML = '';
     list.forEach(([id, label]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = label; b.setAttribute('aria-pressed', pressed(id)); b.onclick = () => { on(id); chips(el, list, pressed, on); }; el.appendChild(b); });
   }
+  const onNeed = (id) => { S.needs.has(id) ? S.needs.delete(id) : S.needs.add(id); store.set('needs', [...S.needs]); paintTime(); compute(); };
+  const onKind = (id) => { S.kind = id; store.set('kind', id); compute(); };
+  function renderChips() { chips($('#needs'), NEEDS, (id) => S.needs.has(id), onNeed); chips($('#kinds'), KINDS, (id) => S.kind === id, onKind); }
   function init() {
     const mo = $('#month'); MON.forEach((m, i) => mo.add(new Option(m, i + 1))); mo.value = S.month;
     mo.onchange = () => { S.month = +mo.value; buildDial(); buildCurve(); paintTime(); compute(); };
     const hr = $('#hour'); hr.value = S.hour;
     hr.oninput = () => { S.hour = +hr.value; store.set('hour', S.hour); paintTime(); };
     hr.onchange = () => compute();
-    chips($('#needs'), NEEDS, (id) => S.needs.has(id), (id) => { S.needs.has(id) ? S.needs.delete(id) : S.needs.add(id); store.set('needs', [...S.needs]); paintTime(); compute(); });
-    chips($('#kinds'), KINDS, (id) => S.kind === id, (id) => { S.kind = id; store.set('kind', id); compute(); });
+    renderChips();
     const og = $('#origin');
     const st = S.marta.stations.filter((s) => s.rail).sort((a, b) => a.name.localeCompare(b.name));
     st.forEach((s) => og.add(new Option(s.name, s.id)));

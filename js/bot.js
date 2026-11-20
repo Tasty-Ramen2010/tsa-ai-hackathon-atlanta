@@ -47,7 +47,13 @@
       clearTimeout(to);
       const j = await r.json().catch(() => ({}));
       wait.textContent = j.reply || 'Sorry, something went wrong. Please try again, or use the list of places.';
-      if (j.reply) { hist.push(text); speak(j.reply); }
+      if (j.reply) hist.push(text);
+      if (j.actions && typeof j.actions === 'object') {
+        // Close the panel first so it does not cover the results. open(false) moves focus to the helper button,
+        // so apply() runs after it and its focus on the results heading wins.
+        try { open(false); if (window.ATL && window.ATL.apply(j.actions)) { add('I set that up for you. The results are on the page.', 'ai'); } } catch (e) {}
+      }
+      if (j.reply) speak(j.reply);
     } catch (e) { wait.textContent = 'I cannot reach the helper right now. The list of places above still works. Please try again later.'; }
     busy = false; inp.focus();
   }
