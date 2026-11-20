@@ -258,7 +258,9 @@
     const hr = $('#hour'); hr.value = S.hour;
     hr.oninput = () => { S.hour = +hr.value; store.set('hour', S.hour); paintTime(); };
     hr.onchange = () => compute();
-    chips($('#needs'), NEEDS, (id) => S.needs.has(id), (id) => { S.needs.has(id) ? S.needs.delete(id) : S.needs.add(id); store.set('needs', [...S.needs]); paintTime(); compute(); });
+    const needChips = () => chips($('#needs'), NEEDS, (id) => S.needs.has(id), (id) => { S.needs.has(id) ? S.needs.delete(id) : S.needs.add(id); store.set('needs', [...S.needs]); paintTime(); compute(); window.dispatchEvent(new CustomEvent('needs-changed')); });
+    needChips();
+    window.addEventListener('needs-changed', () => { S.needs = new Set(store.get('needs', [])); needChips(); paintTime(); compute(); });   // the trip planner shares these choices
     chips($('#kinds'), KINDS, (id) => S.kind === id, (id) => { S.kind = id; store.set('kind', id); compute(); });
     const og = $('#origin');
     const st = S.marta.stations.filter((s) => s.rail).sort((a, b) => a.name.localeCompare(b.name));

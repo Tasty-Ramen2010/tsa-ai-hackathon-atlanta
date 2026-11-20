@@ -13,6 +13,9 @@ fonts, colour tokens, loader, `sky.js` (sun-altitude sky gradient), d3 + topojso
 - Open-Meteo (ERA5): hourly temperature / feels-like by month, 2021-2025
 - US Census (us-atlas): 10 core metro counties
 
+## Trip planner
+The first screen is a metro platform: scroll and a train passes. The next page is the planner: pick a start and destination (or tap the map), see the best MARTA trip from real timetables, schedule it, and get reminders plus a calendar file. See `COLLAB.md`.
+
 ## Status
 - [x] Data exporters, MARTA / climate / counties data
 - [ ] OSM places data (`data/places.json`)
