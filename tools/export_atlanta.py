@@ -95,7 +95,7 @@ KINDS = {
     "toilets": '["amenity"="toilets"]',
     "grocery": '["shop"="supermarket"]',
 }
-MIRRORS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter",
+MIRRORS = ["https://overpass.openstreetmap.fr/api/interpreter", "https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter",
            "https://overpass.private.coffee/api/interpreter"]
 
 

@@ -209,6 +209,50 @@ def log(*a):
         pass
 
 
+
+# ----------------------------------------------------------------------------- actions: the helper can drive the page for people who cannot
+# Derived ONLY from the visitor's own words with fixed keyword tables. The model never chooses actions, so injected text cannot trigger any.
+KIND_WORDS = {"pharmacy": "pharmacy drugstore chemist meds medicine prescription rx", "hospital": "hospital emergency er", "clinic": "clinic doctor doctors urgent",
+              "library": "library cool", "senior": "senior seniors elderly", "community": "community", "grocery": "grocery groceries supermarket food store", "toilets": "restroom bathroom toilet toilets washroom"}
+NEED_RX = {"wheel": r"wheel\W?chair|scooter|rollator|power chair", "walk": r"can'?t walk|cannot walk|walk far|walker|cane|tire easily|get tired", "sight": r"\bblind|low vision|can'?t see|cannot see|vision loss",
+           "hear": r"\bdeaf|hard of hearing|hearing loss|can'?t hear|cannot hear", "easy": r"simple words|plain words|easy words|keep it simple"}
+MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
+DAYPARTS = [("morning", 9), ("noon", 12), ("lunch", 12), ("afternoon", 15), ("evening", 18), ("tonight", 20), ("night", 21)]
+
+
+def derive_actions(q):
+    low = q.lower()
+    words = set(tokens(low))
+    a = {}
+    for kind, ws in KIND_WORDS.items():
+        if words & set(ws.split()):
+            a["kind"] = kind
+            break
+    needs = [n for n, rx in NEED_RX.items() if re.search(rx, low)]
+    if needs:
+        a["needs_add"] = needs
+    m = re.search(r"\b(?:at|around|about)?\s*(1[0-2]|[1-9])(?::([0-5]\d))?\s*(am|pm|a\.m\.|p\.m\.)", low)
+    if m:
+        h = int(m.group(1)) % 12 + (12 if m.group(3).startswith("p") else 0)
+        a["hour"] = h + (0.5 if m.group(2) and int(m.group(2)) >= 30 else 0)
+    else:
+        for w, h in DAYPARTS:
+            if w in words:
+                a["hour"] = h
+                break
+    for i, mo in enumerate(MONTHS):
+        if mo in words and mo != "may" or (mo == "may" and re.search(r"\bin may\b", low)):
+            a["month"] = i + 1
+            break
+    else:
+        for w, mo in (("summer", 7), ("winter", 1), ("spring", 4), ("fall", 10), ("autumn", 10)):
+            if w in words:
+                a["month"] = mo
+                break
+    if "kind" in a and re.search(r"\b(find|show|take|need|nearest|closest|where|near|get me|looking)\b", low):
+        a["open_first"] = True
+    return a
+
 # ----------------------------------------------------------------------------- the chat pipeline
 NEEDS = {"wheel": "uses a wheelchair or scooter", "walk": "cannot walk far", "sight": "low vision or blind", "hear": "deaf or hard of hearing", "easy": "wants plain simple words"}
 
@@ -280,7 +324,7 @@ def chat(payload):
     if reply is None:
         log("output-blocked")
         return 200, {"reply": REFUSE_SCOPE, "note": "filtered"}
-    return 200, {"reply": reply, "sources": [{"name": d["text"].split(". ")[0][:90], "la": d.get("la"), "lo": d.get("lo")} for s, d, dist in hits if d["t"] != "guide"][:3]}
+    return 200, {"reply": reply, "actions": derive_actions(q), "sources": [{"name": d["text"].split(". ")[0][:90], "la": d.get("la"), "lo": d.get("lo")} for s, d, dist in hits if d["t"] != "guide"][:3]}
 
 
 def llm_ready():
