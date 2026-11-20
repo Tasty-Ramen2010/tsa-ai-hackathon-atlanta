@@ -343,3 +343,16 @@ body.cb .mapkey .sw0 { fill: #D55E00; } body.cb .mapkey .swr { fill: #56B4E9; }
 .a11y-t { font-weight: 700; margin-right: 0.3rem; } .a11y .pal { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; }
 .a11y select { font: 700 1rem var(--sans); min-height: 2.75rem; padding: 0 0.7rem; border-radius: 99px; border: 2px solid rgba(243,234,217,0.6); background: rgba(10,9,8,0.55); color: var(--paper); }
 .a11y select option { color: #000; background: #fff; }
+
+/* colorblind-safe, site-wide (Okabe-Ito). Replaces red/green meaning everywhere, and adds symbols so colour is never the only cue. */
+body.cb { --ok: #0072B2; --part: #8a5a00; --bad: #D55E00; --unk: #4d4d4d; --emberDeep: #0072B2; --ember: #E69F00; --sun: #56B4E9; }
+body.cb .flags li.ok { border-left-color: #0072B2; background: #dcecf7; } body.cb .flags li.ok::before { content: "✓ "; font-weight: 800; color: #004a75; }
+body.cb .flags li.warn { border-left-color: #D55E00; background: #fdebd9; } body.cb .flags li.warn::before { content: "⚠ "; font-weight: 800; color: #8a3a00; }
+body.cb .badge.b0 { background: #0072B2; color: #fff; }
+body.cb .opt.on { border-color: #0072B2; box-shadow: 0 8px 26px rgba(0,114,178,0.18); }
+body.cb .when i { color: #0072B2; }
+body.cb .l-walk { --lc: #D55E00; } body.cb .l-walk .lt::before { border-left-color: #D55E00; }
+body.cb .advice.hot { border-color: #D55E00; } body.cb .advice.cold { border-color: #56B4E9; }
+body.cb .eyebrow b, body.cb em { color: #0072B2; }
+body.cb::after { content: "Colorblind-safe colors on"; position: fixed; left: 0.6rem; bottom: 0.6rem; z-index: 5; font: 700 0.75rem sans-serif; background: #000; color: #fff; padding: 0.25rem 0.6rem; border-radius: 99px; opacity: 0.85; pointer-events: none; }
+@media print { body.cb::after { display: none; } }
