@@ -88,9 +88,9 @@ def export_marta():
 KINDS = {
     "hospital": '["amenity"="hospital"]',
     "pharmacy": '["amenity"="pharmacy"]',
-    "clinic": '["amenity"="clinic"]',
     "library": '["amenity"="library"]',
     "senior": '["amenity"="social_facility"]["social_facility:for"~"senior"]',
+    "clinic": '["amenity"="clinic"]',
     "community": '["amenity"="community_centre"]',
     "toilets": '["amenity"="toilets"]',
     "grocery": '["shop"="supermarket"]',
@@ -117,7 +117,11 @@ def export_places():
     places = []
     for kind, flt in KINDS.items():
         q = f'[out:json][timeout:80];(nwr{flt}({bb}););out center tags;'
-        els = overpass(q)["elements"]
+        try:
+            els = overpass(q)["elements"]
+        except RuntimeError as e:  # keep the other categories if one is unavailable
+            print(f"  {kind}: SKIPPED ({e}); rerun later to add it")
+            continue
         n0 = len(places)
         for e in els:
             t = e.get("tags", {})
@@ -140,7 +144,8 @@ def export_places():
             if t.get("hearing_impaired") in ("yes", "designated") or t.get("hearing_loop") == "yes": p["hl"] = 1
             places.append(p)
         print(f"  {kind}: {len(places)-n0}")
-        time.sleep(2)
+        write("places.json", {"source": "OpenStreetMap contributors (ODbL), via Overpass", "fetched": time.strftime("%Y-%m-%d"), "places": places})  # save as we go
+        time.sleep(1)
     write("places.json", {"source": "OpenStreetMap contributors (ODbL), via Overpass", "fetched": time.strftime("%Y-%m-%d"), "places": places})
 
 
