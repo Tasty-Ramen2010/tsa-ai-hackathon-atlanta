@@ -314,3 +314,10 @@ body:not(.on-hero) .topbar { background: rgba(10, 9, 8, 0.9); backdrop-filter: b
   .topbar { flex-wrap: nowrap; justify-content: flex-end; padding: 0.5rem 0.8rem; min-height: 3.4rem; }
   .a11y { gap: 0.3rem; } .a11y button { min-height: 2.6rem; min-width: 2.6rem; padding: 0 0.7rem; font-size: 0.85rem; }
 }
+
+/* WCAG 2.2 AA: every control at least 44 x 44 CSS px */
+.mtog button, .btn.small, .avlist button, .rem, .toast button, .mzoom button, .swap, .ico, .a11y button, .chip, .seg label, .clist li { min-height: 2.75rem; }
+.mtog button, .toast button, .mzoom button, .swap, .ico, .a11y button { min-width: 2.75rem; }
+.linkbtn { min-height: 2.75rem; padding: 0 0.4rem; }
+#i-walk { font: 600 1em var(--sans); min-height: 3.2rem; width: 100%; padding: 0 0.95rem; border-radius: 14px; border: 2px solid var(--paperInk); background: #fff; color: var(--paperInk); }
+.opt button:focus-visible, .tpanel :focus-visible, .tmap :focus-visible { outline: 3px solid var(--emberDeep); outline-offset: 2px; }

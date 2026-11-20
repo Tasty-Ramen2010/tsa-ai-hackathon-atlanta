@@ -221,7 +221,7 @@
     return { from: S.from, to: S.to, date, minutes, mode: mode === 'now' ? 'depart' : mode };
   }
   function run(req, opts) {
-    const profile = S.A.PROFILES[profileKey()];
+    const profile = Object.assign({}, S.A.PROFILES[profileKey()]), mw = +$('#i-walk').value; if (mw) profile.maxWalk = mw;
     return S.T.plan(req, { profile, climate: S.climate, avoid: S.avoid });
   }
   function go() {
@@ -242,7 +242,7 @@
     return `<li class="l-rail" style="--lc:${l.color}"><span class="lt"></span><div><b>${nm} line train</b> toward ${esc(l.toward)}<br>${esc(l.from)} → ${esc(l.to)}${E ? '' : ` · ${l.count} stop${l.count > 1 ? 's' : ''}`}<br><span class="tm">${fmt(l.dep)} → ${fmt(l.arr)}</span></div></li>`;
   }
   function flagsHTML(o, req) {
-    const E = easy(), f = [], p = S.A.PROFILES[profileKey()];
+    const E = easy(), f = [], p = Object.assign({}, S.A.PROFILES[profileKey()], +$('#i-walk').value ? { maxWalk: +$('#i-walk').value } : {});
     if (o.kind === 'rail') f.push(o.tier === 'confirmed' ? '<li class="ok">MARTA lists these stations as step-free.</li>' : o.tier === 'unknown' || o.tier === 'limited' ? '<li class="warn">MARTA has not confirmed step-free access at one of these stations. Call MARTA first.</li>' : '');
     if (o.kind === 'rail') f.push('<li>Elevators break. <a href="https://itsmarta.com/" rel="noopener">Check MARTA alerts</a> before you leave.</li>');
     if (o.heat === 'danger' || o.heat === 'high') {
@@ -265,7 +265,7 @@
         <form class="sched" id="sched" hidden></form></article>`;
     }).join('');
     const dow = S.T.dayKind(req.date) === 'wk' ? 'weekday' : S.T.dayKind(req.date) === 'sa' ? 'Saturday' : 'Sunday';
-    $('#tresult').innerHTML = `<h3 id="t-title">${esc(S.from.label)} to ${esc(S.to.label)}</h3><p class="tiny">${dayLabel(req.date)} · ${dow} train times${req.mode === 'arrive' ? ' · arriving by ' + fmt(req.minutes) : ''}</p>${cards}${res.notes.map((n) => `<p class="tiny note">${esc(n)}</p>`).join('')}<p class="tiny">Includes MARTA rail only. Buses and live delays are not in this planner yet.${mobilityHTML()}</p>`;
+    $('#tresult').innerHTML = `<h3 id="t-title">${esc(S.from.label)} to ${esc(S.to.label)}</h3><p class="tiny">${dayLabel(req.date)} · ${dow} train times${req.mode === 'arrive' ? ' · arriving by ' + fmt(req.minutes) : ''}</p>${cards}${res.notes.map((n) => `<p class="tiny note">${esc(n)}</p>`).join('')}<p class="tiny">Train times: MARTA's published schedule, valid ${esc(S.rail.valid[0])} to ${esc(S.rail.valid[1])}. Station access: MARTA's data; "unknown" means MARTA has not said. Sidewalk slopes, surfaces and curb ramps are not known. Includes MARTA rail only. Buses and live delays are not in this planner yet.${mobilityHTML()}</p>`;
     MAP.want(); if (fit) MAP.fit(routePoints());
   }
 
@@ -374,6 +374,7 @@
       else if (b.dataset.ics != null) { const o = S.last.res.options[+b.dataset.ics]; ics({ id: Date.now().toString(36), from: S.from, to: S.to, date: dateISO(S.last.req.date), leave: o.leave, arrive: o.arrive, steps: stepsOf(o), offs: [60, 15], note: '' }); }
       else if (b.dataset.try != null) { const m = +b.dataset.try; $('#i-time').value = `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; document.getElementById(S.last.req.mode === 'arrive' ? 'm-arr' : 'm-dep').checked = true; sync(); go(); }
     });
+    $('#i-walk').addEventListener('change', () => { if (S.last) go(); });
     $('#t-list').addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return; const all = trips();
       if (b.dataset.tdel) { store.set('trips', all.filter((t) => t.id !== b.dataset.tdel)); renderTrips(); }
