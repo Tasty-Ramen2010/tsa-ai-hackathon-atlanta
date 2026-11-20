@@ -1,5 +1,7 @@
 # Handoff (for whoever is renaming/finishing "MARTA Max")
 
+**Merge rule (from Ram): the MARTA Max version with the animations and visual design takes precedence over the plain restyle in fa58416.** On any conflict in `index.html`, `styles.css`, `js/app.js`, keep the MARTA Max side; only keep from the plain version what is still needed for the helper (`js/bot.js`, `window.ATL.apply`/`window.ATL_STATE` in `js/app.js`) and the accessibility features (`js/a11y.js`, `body.cb` / `body.hc` / tier symbols and marker shapes).
+
 State at commit fa58416: site is plain/neutral (no SUNDIAL theming), still branded "ATL Access" in `index.html`, `README.md`, `js/bot.js` (button "Ask the helper"), `chat/bot.py` (system prompt), `chat/knowledge.md`, `tools/export_atlanta.py`.
 
 ## Rename to MARTA Max
