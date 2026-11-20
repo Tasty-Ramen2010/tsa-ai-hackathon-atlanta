@@ -1,8 +1,11 @@
-# ATL Access — TSA AI Hackathon
+# MARTA Max — TSA AI Hackathon
 
 **Prompt:** Build an application that makes navigating the Atlanta metropolitan area easier, safer, and more accessible for elderly individuals and people with disabilities.
 
 **Live site:** https://tasty-ramen2010.github.io/tsa-ai-hackathon-atlanta/
+
+## Trip planner (new)
+The first screen is a metro platform: scroll and a train passes. The next page plans trips on **real MARTA rail timetables** (`data/rail.json`), with walks, transfers, arrive-by, "avoid this station" for broken elevators, scheduling and reminders (+ calendar file). Code: `js/station.js`, `js/transit.js`, `js/access.js`, `js/tripui.js`; tests: `node tests/transit.test.js`. See `COLLAB.md`.
 
 ## What it does
 - Pick what helps you get around (wheelchair/scooter, can't walk far, low vision, deaf/hard of hearing, plain words) and what you need (pharmacy, hospital, clinic, library, senior center, community center, grocery, restroom).

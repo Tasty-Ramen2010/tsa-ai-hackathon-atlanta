@@ -294,8 +294,9 @@
     el.innerHTML = '';
     list.forEach(([id, label]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = label; b.setAttribute('aria-pressed', pressed(id)); b.onclick = () => { on(id); chips(el, list, pressed, on); }; el.appendChild(b); });
   }
-  const onNeed = (id) => { S.needs.has(id) ? S.needs.delete(id) : S.needs.add(id); store.set('needs', [...S.needs]); paintTime(); compute(); };
+  const onNeed = (id) => { S.needs.has(id) ? S.needs.delete(id) : S.needs.add(id); store.set('needs', [...S.needs]); paintTime(); compute(); window.dispatchEvent(new CustomEvent('needs-changed')); };
   const onKind = (id) => { S.kind = id; store.set('kind', id); compute(); };
+  window.addEventListener('needs-changed', () => { S.needs = new Set(store.get('needs', [])); renderChips(); paintTime(); compute(); });   // the trip planner shares these choices
   function renderChips() { chips($('#needs'), NEEDS, (id) => S.needs.has(id), onNeed); chips($('#kinds'), KINDS, (id) => S.kind === id, onKind); }
   function init() {
     const mo = $('#month'); MON.forEach((m, i) => mo.add(new Option(m, i + 1))); mo.value = S.month;

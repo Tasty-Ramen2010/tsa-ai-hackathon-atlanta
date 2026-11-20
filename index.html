@@ -3,22 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ATL Access: accessible places and trips in metro Atlanta</title>
-<meta name="description" content="Find accessible pharmacies, clinics, libraries and more in metro Atlanta, see how hot or cold it will be when you go, and get help planning the trip. Built for older adults and people with disabilities.">
-<meta name="theme-color" content="#0b5cad">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b5cad'/%3E%3Cpath d='M16 6a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm-7 20 3-9h8l3 9' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<title>MARTA Max</title>
+<meta name="description" content="Find accessible places around metro Atlanta, check the heat, cold and daylight for the hour you want to go, and get a plain-language trip card. Built for elders and people with disabilities.">
+<meta name="theme-color" content="#0a0908">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0908'/%3E%3Ccircle cx='16' cy='18' r='9' fill='none' stroke='%23f3ead9' stroke-width='1.6'/%3E%3Cpath d='M16 18 L25 9' stroke='%23ff6a1a' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/climate-crisis-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/hanken-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<a class="skip" href="#plan">Skip to trip planner</a>
+<a class="skip" href="#trip">Skip to the trip planner</a>
 
-<header class="site">
-  <div class="bar">
-    <a class="brand" href="#top" aria-label="ATL Access, back to the top"><span class="logo" aria-hidden="true">♿</span> ATL Access</a>
-    <nav class="menu" aria-label="Sections">
-      <a href="#plan">Plan a trip</a><a href="#results">Places</a><a href="#safety">Safety</a><a href="#about">About</a>
-    </nav>
-  </div>
+<div id="sky" aria-hidden="true"></div>
+
+<h1 id="title"><a href="#hero" aria-label="MARTA Max, back to the top">MARTA Max</a></h1>
+
+<header class="topbar">
+  <a class="brand" href="#hero" aria-label="MARTA Max, back to the top">MARTA <b>Max</b></a>
   <div class="a11y" role="group" aria-label="Display and reading options">
     <span class="a11y-t">Display options:</span>
     <button type="button" id="t-minus" aria-label="Smaller text">A−</button>
@@ -34,50 +35,129 @@
   </div>
 </header>
 
-<main id="top">
-<section id="hero" class="hero">
-  <div class="wrap">
-    <p class="kicker">Metro Atlanta · for older adults and people with disabilities</p>
-    <h1>Find accessible places and plan an easier trip.</h1>
-    <p class="lede">Tell us what helps you get around and what you are looking for. We list places near you with the access you need, show how hot or cold it will be when you go, and point you to the easiest way to get there. Or just <b>ask the helper</b> (button at the bottom right) and it will set everything up for you.</p>
-    <a class="btn" href="#plan">Start planning</a>
+<main>
+<section id="hero" class="stationhero" aria-label="MARTA Max">
+  <div class="stick">
+    <canvas id="station" aria-hidden="true"></canvas>
+    <p class="hero-line" id="heroline">Plan every trip around the heat, the elevators and your own pace. Step-free MARTA trips across metro Atlanta.</p>
+    <a class="scroll-cue" href="#trip">Scroll <span aria-hidden="true">↓</span></a>
+    <div class="chin" aria-hidden="true"></div>
+  </div>
+</section>
 
-    <div class="when card">
-      <h2>When are you going?</h2>
-      <div class="whengrid">
-        <div>
-          <p class="bigtime" id="bigtime" aria-live="polite"></p>
-          <p class="feels" id="feels"></p>
-          <p class="advice" id="advice" aria-live="polite"></p>
-          <p class="bestline" id="bestline"></p>
-        </div>
-        <div>
-          <label class="scrub"><span>Time of day</span>
-            <input id="hour" type="range" min="0" max="23.5" step="0.5" aria-describedby="advice">
-          </label>
-          <label class="scrub"><span>Month</span>
-            <select id="month"></select>
-          </label>
+<section id="trip" class="paper tripsec">
+  <div class="wrap wide">
+    <p class="eyebrow"><b>Trip</b> Plan a ride</p>
+    <h2>Where are you going?</h2>
+    <p class="hint">Pick a start and a destination, or tap the map. We use MARTA's real train times and plan the walks around the weather.</p>
+    <div class="tripcard">
+      <div class="tpanel">
+        <form id="tform" novalidate autocomplete="off">
+          <div class="fromto">
+            <div class="combo" id="c-from">
+              <label for="i-from">From</label>
+              <div class="cin"><input id="i-from" type="text" role="combobox" aria-expanded="false" aria-controls="l-from" aria-autocomplete="list" placeholder="Station, landmark or address" spellcheck="false">
+                <button type="button" class="ico" id="b-loc" aria-label="Use my location"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button></div>
+              <ul id="l-from" class="clist" role="listbox" hidden></ul>
+            </div>
+            <button type="button" class="swap" id="b-swap" aria-label="Swap start and destination"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v14M4 14l4 4 4-4M16 20V6M12 10l4-4 4 4"/></svg></button>
+            <div class="combo" id="c-to">
+              <label for="i-to">To</label>
+              <div class="cin"><input id="i-to" type="text" role="combobox" aria-expanded="false" aria-controls="l-to" aria-autocomplete="list" placeholder="Where do you want to go?" spellcheck="false"></div>
+              <ul id="l-to" class="clist" role="listbox" hidden></ul>
+            </div>
+          </div>
+          <fieldset class="when">
+            <legend>When</legend>
+            <div class="seg">
+              <input type="radio" name="mode" id="m-now" value="now"><label for="m-now">Leave now</label>
+              <input type="radio" name="mode" id="m-dep" value="depart" checked><label for="m-dep">Leave at</label>
+              <input type="radio" name="mode" id="m-arr" value="arrive"><label for="m-arr">Arrive by</label>
+            </div>
+            <div class="dt"><label class="sr" for="i-date">Date</label><input type="date" id="i-date"><label class="sr" for="i-time">Time</label><input type="time" id="i-time" step="300"></div>
+          </fieldset>
+          <fieldset>
+            <legend>How you travel</legend>
+            <div class="chips tight" id="t-needs" role="group" aria-label="How you travel"></div>
+          </fieldset>
+          <fieldset>
+            <legend>Longest walk you are comfortable with</legend>
+            <label class="sr" for="i-walk">Longest walk</label>
+            <select id="i-walk"><option value="">Use my choices above</option><option value="300">About 300 m (3 blocks)</option><option value="600">About 600 m (6 blocks)</option><option value="1000">About 1 km (10 blocks)</option><option value="3000">No limit</option></select>
+          </fieldset>
+          <details class="avoid">
+            <summary>An elevator is out of service?</summary>
+            <p class="tiny">MARTA does not publish live elevator status in its open data. Check MARTA's alerts, then tell us which stations to avoid and we will plan around them.</p>
+            <div class="avrow"><label class="sr" for="a-sel">Station to avoid</label><select id="a-sel"></select><button type="button" class="btn ghost small" id="a-add">Avoid it</button></div>
+            <ul class="avlist" id="a-list" aria-live="polite"></ul>
+          </details>
+          <button type="submit" class="btn go" id="b-go">Find the best trip</button>
+          <p class="tiny" id="t-msg" role="status" aria-live="polite"></p>
+        </form>
+        <div id="tresult" class="tresult" aria-live="polite"></div>
+      </div>
+      <div class="tmap">
+        <canvas id="tmap" role="img" aria-label="Map of metro Atlanta with MARTA rail. Use the boxes beside the map to plan; tapping the map also sets a place."></canvas>
+        <div class="mtog" role="group" aria-label="What a tap on the map sets"><span>Tap sets</span>
+          <button type="button" id="mt-to" aria-pressed="true">Destination</button><button type="button" id="mt-from" aria-pressed="false">Start</button></div>
+        <div class="mzoom"><button type="button" id="z-in" aria-label="Zoom in">+</button><button type="button" id="z-out" aria-label="Zoom out">−</button><button type="button" id="z-fit" aria-label="Show the whole route"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div>
+        <div class="mkey" aria-hidden="true"><span><i style="background:#CE242B"></i>Red</span><span><i style="background:#D4A723"></i>Gold</span><span><i style="background:#0075B2"></i>Blue</span><span><i style="background:#009D4B"></i>Green</span><span><i class="walk"></i>Walk</span></div>
+        <p class="attr">© OpenStreetMap contributors</p>
+        <p class="mfail" id="m-fail" hidden>Map pictures could not load. Planning still works from the boxes.</p>
+      </div>
+    </div>
+
+    <div class="mytrips" id="mytrips">
+      <div class="mt-head">
+        <div><p class="eyebrow"><b>Trips</b> Scheduled</p><h2>Your trips and reminders</h2></div>
+        <div class="mt-set">
+          <button type="button" class="btn ghost small" id="n-perm">Turn on pop-up reminders</button>
+          <label class="chk"><input type="checkbox" id="n-speak"> Read reminders aloud</label>
         </div>
       </div>
-      <figure class="curve"><div id="curve" role="img" aria-label="Chart of how hot it feels through the day, with night hours shaded"></div>
-        <figcaption>How it feels through the day in the chosen month (average of 2021–2025). The vertical line is your time.</figcaption></figure>
+      <p class="tiny" id="n-note">Pop-up and spoken reminders only work while this page is open. The calendar file is the reliable way: your phone's calendar will remind you even when this page is closed.</p>
+      <ul class="tlist" id="t-list"></ul>
     </div>
   </div>
 </section>
 
-<section id="plan" class="block">
+<section id="time" class="hero timehero">
+  <div class="hero-in">
+    <p class="kicker">TSA AI Hackathon · Metro Atlanta for elders and people with disabilities</p>
+    <h2 class="h1">Go to the right place, at the right hour.</h2>
+    <p class="lede">Pick what you need and when you want to go. We show places with the access you need, how hot, cold or dark it will be, and the easiest way to get there.</p>
+    <div class="dialbox">
+            <div class="dialread">
+        <p class="bigtime" id="bigtime" aria-live="polite"></p>
+        <p class="feels" id="feels"></p>
+        <p class="advice" id="advice" aria-live="polite"></p>
+        <label class="scrub"><span>Time of day</span>
+          <input id="hour" type="range" min="0" max="23.5" step="0.5" aria-describedby="advice">
+        </label>
+        <label class="scrub"><span>Month</span>
+          <select id="month"></select>
+        </label>
+        <p class="bestline" id="bestline"></p>
+      </div>
+    </div>
+    <figure class="curve"><div id="curve" role="img" aria-label="Chart of how hot it feels through the day, with daylight shaded"></div>
+      <figcaption>How it feels through the day in the chosen month (average of 2021–2025). Orange line: your time.</figcaption></figure>
+  </div>
+  <div class="chin" aria-hidden="true"></div>
+</section>
+
+<section id="plan" class="paper">
   <div class="wrap">
-    <p class="eyebrow">Step 1</p>
+    <p class="eyebrow"><b>01</b> About you</p>
     <h2>What helps you get around?</h2>
     <p class="hint">Choose any that apply. We use this to rank places, shorten walks and add tips. It stays on your device.</p>
     <div class="chips" id="needs" role="group" aria-label="What helps you get around"></div>
 
-    <p class="eyebrow">Step 2</p>
+    <p class="eyebrow"><b>02</b> Where to</p>
     <h2>What are you looking for?</h2>
     <div class="chips" id="kinds" role="group" aria-label="Type of place"></div>
 
-    <p class="eyebrow">Step 3</p>
+    <p class="eyebrow"><b>03</b> Starting point</p>
     <h2>Where are you starting?</h2>
     <div class="start">
       <label>Start from <select id="origin"></select></label>
@@ -87,10 +167,10 @@
   </div>
 </section>
 
-<section id="results" class="block alt">
+<section id="results" class="paper alt">
   <div class="wrap two">
     <div>
-      <p class="eyebrow">Your results</p>
+      <p class="eyebrow"><b>04</b> Best matches</p>
       <h2 id="res-title">Places near you</h2>
       <p class="hint" id="res-sub" aria-live="polite"></p>
       <ol class="board" id="board"></ol>
@@ -98,21 +178,15 @@
     </div>
     <div class="mapcol">
       <div class="mapwrap"><canvas id="map" aria-hidden="true"></canvas>
-        <div class="mapkey" aria-hidden="true">
-          <span class="ki"><svg viewBox="0 0 14 14"><circle class="sw1" cx="7" cy="7" r="6"/></svg>Step-free</span>
-          <span class="ki"><svg viewBox="0 0 14 14"><path class="sw2" d="M7 .5 13.5 7 7 13.5.5 7Z"/></svg>Partly</span>
-          <span class="ki"><svg viewBox="0 0 14 14"><path class="sw3" d="M7 1 13 13H1Z"/></svg>Not reported</span>
-          <span class="ki"><svg viewBox="0 0 14 14"><rect class="sw0" x="1" y="1" width="12" height="12"/><path class="sx" d="M4 4 10 10M10 4 4 10"/></svg>Not accessible</span>
-          <span class="ki"><svg viewBox="0 0 14 14"><rect class="swr" x="0" y="5" width="14" height="4"/></svg>MARTA rail</span>
-        </div></div>
-      <p class="tiny">The list is the main way to use this page. The map shows the same places. Drag to move, scroll or pinch to zoom, tap a marker.</p>
+        <div class="mapkey" aria-hidden="true"><span class="k1"></span>Step-free <span class="k2"></span>Partly <span class="k3"></span>Not reported <span class="k4"></span>Not accessible <span class="k5"></span>MARTA rail</div></div>
+      <p class="tiny">The list is the main way to use this page. The map is a picture of the same places. Drag to move, scroll or pinch to zoom, tap a dot.</p>
     </div>
   </div>
 </section>
 
-<section id="safety" class="block">
+<section id="safety" class="paper">
   <div class="wrap">
-    <p class="eyebrow">Safety</p>
+    <p class="eyebrow"><b>05</b> Safety</p>
     <h2>If something goes wrong</h2>
     <ul class="help">
       <li><a href="tel:911"><b>911</b><span>Emergency: police, fire, ambulance. Text-to-911 works in many Georgia counties; call if you can.</span></a></li>
@@ -130,13 +204,13 @@
 <section id="about" class="block alt">
   <div class="wrap grid3">
     <div><p class="eyebrow">About</p><h2>What this is</h2>
-      <p>ATL Access is a student project for the TSA AI Hackathon. It helps older adults and people with disabilities find places they can actually use, at a time of day that is safe and comfortable, and get there more easily.</p></div>
+      <p>MARTA Max is a student project for the TSA AI Hackathon. It helps older adults and people with disabilities find places they can actually use, at a time of day that is safe and comfortable, and get there more easily.</p></div>
     <div><p class="eyebrow">Data</p><h2>Open sources, shown honestly</h2>
       <p>MARTA stop accessibility (MARTA schedule data), places and wheelchair tags (OpenStreetMap volunteers), weather (Open-Meteo, 2021–2025), county lines (US Census). "Not reported" means nobody has recorded it, not that it is inaccessible. Always call first.</p></div>
     <div><p class="eyebrow">Limits</p><h2>What we do not claim</h2>
       <p>This is a prototype, not medical or legal advice. Hours and access can change, and elevators break. Heat figures are historical averages, not a forecast. The helper is an AI and can be wrong. AI helped write this site's code; people check the sources.</p></div>
   </div>
-  <footer class="foot wrap"><p>ATL Access · TSA AI Hackathon · Map data © OpenStreetMap contributors · <a href="https://github.com/Tasty-Ramen2010/tsa-ai-hackathon-atlanta">Source code</a></p></footer>
+  <footer class="foot wrap"><p>MARTA Max is a student project and is not affiliated with or run by MARTA. · TSA AI Hackathon · Map data © OpenStreetMap contributors · <a href="https://github.com/Tasty-Ramen2010/tsa-ai-hackathon-atlanta">Source code</a></p></footer>
 </section>
 </main>
 
@@ -157,8 +231,22 @@
   </div>
 </div>
 
+<nav id="dock" class="dock" aria-label="Sections">
+  <a href="#trip"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="13" rx="3"/><path d="M5 11h14M9 20l-2 1.5M15 20l2 1.5M8.5 7.5h.01M15.5 7.5h.01"/></svg><span>Trip</span></a>
+  <a href="#time"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 12 17 6.5M12 6v1.5"/></svg><span>Time</span></a>
+  <a href="#plan"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/></svg><span>You</span></a>
+  <a href="#results"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg><span>Places</span></a>
+  <a href="#safety"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/></svg><span>Safety</span></a>
+</nav>
+
 <script src="vendor/d3.min.js"></script>
+<script src="vendor/topojson-client.min.js"></script>
+<script src="js/sky.js"></script>
 <script src="js/app.js"></script>
+<script src="js/access.js"></script>
+<script src="js/transit.js"></script>
+<script src="js/station.js"></script>
+<script src="js/tripui.js"></script>
 <script src="js/a11y.js"></script>
 <script src="js/bot.js"></script>
 </body>
