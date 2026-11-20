@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SUNDIAL ATL: the right place at the right hour</title>
+<meta name="description" content="Find accessible places around metro Atlanta, check the heat, cold and daylight for the hour you want to go, and get a plain-language trip card. Built for elders and people with disabilities.">
+<meta name="theme-color" content="#0a0908">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0908'/%3E%3Ccircle cx='16' cy='18' r='9' fill='none' stroke='%23f3ead9' stroke-width='1.6'/%3E%3Cpath d='M16 18 L25 9' stroke='%23ff6a1a' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/climate-crisis-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/hanken-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="loading">
+<a class="skip" href="#plan">Skip to trip planner</a>
+
+<div id="loader" role="status" aria-label="Loading SUNDIAL ATL">
+  <svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
+    <circle class="l-ring" cx="60" cy="68" r="38" fill="none" stroke="#f3ead9" stroke-width="2.4"/>
+    <path class="l-tick" d="M60 30 V38 M98 68 H90 M22 68 H30 M33 41 L38.5 46.5 M87 41 L81.5 46.5" stroke="#f3ead9" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+    <path class="l-gnomon" d="M60 68 L88 26" stroke="#ff6a1a" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <circle class="l-dot" cx="60" cy="68" r="4.5" fill="#f3ead9"/>
+  </svg>
+</div>
+<div id="sky" aria-hidden="true"></div>
+
+<header class="topbar">
+  <a class="brand" href="#hero" aria-label="SUNDIAL ATL, back to the top">SUNDIAL <b>ATL</b></a>
+  <div class="a11y" role="group" aria-label="Display and reading options">
+    <button type="button" id="t-minus" aria-label="Smaller text">A−</button>
+    <button type="button" id="t-plus" aria-label="Larger text">A+</button>
+    <button type="button" id="t-contrast" aria-pressed="false">High contrast</button>
+  </div>
+</header>
+
+<main>
+<section id="hero" class="hero">
+  <div class="hero-in">
+    <p class="kicker">TSA AI Hackathon · Metro Atlanta for elders and people with disabilities</p>
+    <h1>Go to the right place, at the right hour.</h1>
+    <p class="lede">Pick what you need and when you want to go. We show places with the access you need, how hot, cold or dark it will be, and the easiest way to get there.</p>
+    <div class="dialbox">
+      <svg id="dial" viewBox="0 0 220 220" role="img" aria-label="Sundial showing the chosen time of day"></svg>
+      <div class="dialread">
+        <p class="bigtime" id="bigtime" aria-live="polite"></p>
+        <p class="feels" id="feels"></p>
+        <p class="advice" id="advice" aria-live="polite"></p>
+        <label class="scrub"><span>Time of day</span>
+          <input id="hour" type="range" min="0" max="23.5" step="0.5" aria-describedby="advice">
+        </label>
+        <label class="scrub"><span>Month</span>
+          <select id="month"></select>
+        </label>
+        <p class="bestline" id="bestline"></p>
+      </div>
+    </div>
+    <figure class="curve"><div id="curve" role="img" aria-label="Chart of how hot it feels through the day, with daylight shaded"></div>
+      <figcaption>How it feels through the day in the chosen month (average of 2021–2025). Orange line: your time.</figcaption></figure>
+  </div>
+  <div class="chin" aria-hidden="true"></div>
+</section>
+
+<section id="plan" class="paper">
+  <div class="wrap">
+    <p class="eyebrow"><b>01</b> About you</p>
+    <h2>What helps you get around?</h2>
+    <p class="hint">Choose any that apply. We use this to rank places, shorten walks and add tips. It stays on your device.</p>
+    <div class="chips" id="needs" role="group" aria-label="What helps you get around"></div>
+
+    <p class="eyebrow"><b>02</b> Where to</p>
+    <h2>What are you looking for?</h2>
+    <div class="chips" id="kinds" role="group" aria-label="Type of place"></div>
+
+    <p class="eyebrow"><b>03</b> Starting point</p>
+    <h2>Where are you starting?</h2>
+    <div class="start">
+      <label>Start from <select id="origin"></select></label>
+      <button type="button" class="btn ghost" id="locate">Use my location</button>
+    </div>
+    <p class="tiny" id="origin-note">Your location is only used in your browser to measure distances. It is never sent anywhere.</p>
+  </div>
+</section>
+
+<section id="results" class="paper alt">
+  <div class="wrap two">
+    <div>
+      <p class="eyebrow"><b>04</b> Best matches</p>
+      <h2 id="res-title">Places near you</h2>
+      <p class="hint" id="res-sub" aria-live="polite"></p>
+      <ol class="board" id="board"></ol>
+      <p class="tiny" id="res-note"></p>
+    </div>
+    <div class="mapcol">
+      <div class="mapwrap"><canvas id="map" aria-hidden="true"></canvas>
+        <div class="mapkey" aria-hidden="true"><span class="k1"></span>Step-free <span class="k2"></span>Partly <span class="k3"></span>Not reported <span class="k4"></span>Not accessible <span class="k5"></span>MARTA rail</div></div>
+      <p class="tiny">The list is the main way to use this page. The map is a picture of the same places. Drag to move, scroll or pinch to zoom, tap a dot.</p>
+    </div>
+  </div>
+</section>
+
+<section id="safety" class="paper">
+  <div class="wrap">
+    <p class="eyebrow"><b>05</b> Safety</p>
+    <h2>If something goes wrong</h2>
+    <ul class="help">
+      <li><a href="tel:911"><b>911</b><span>Emergency: police, fire, ambulance. Text-to-911 works in many Georgia counties; call if you can.</span></a></li>
+      <li><a href="tel:988"><b>988</b><span>Suicide and crisis lifeline, call or text, any hour.</span></a></li>
+      <li><a href="tel:211"><b>211</b><span>United Way: rides, food, cooling and warming centers, senior services.</span></a></li>
+      <li><a href="tel:311"><b>311</b><span>City of Atlanta: broken sidewalks, curb ramps, signals.</span></a></li>
+      <li><a href="https://itsmarta.com/marta-mobility.aspx" rel="noopener"><b>MARTA Mobility</b><span>Door-to-door rides if you cannot use buses or trains. Get the current phone numbers and how to apply on MARTA's official page.</span></a></li>
+      <li><a href="tel:4048484911"><b>MARTA Police</b><span>404-848-4911 emergency line, as listed in MARTA's ride guide. On a train or at a station you can also use the white call box.</span></a></li>
+    </ul>
+    <h3>Heat and cold</h3>
+    <p>In hot weather: choose morning, drink water before you are thirsty, rest in a library or a store. In freezing weather: watch for ice, wear layers, and ask 211 about warming centers. Call 911 for confusion, fainting, or a very high body temperature.</p>
+  </div>
+</section>
+
+<section id="about" class="paper alt">
+  <div class="wrap grid3">
+    <div><p class="eyebrow">How it works</p><h2>SUNDIAL, remodeled.</h2>
+      <p>SUNDIAL corrected fire counts for the time of day a satellite looks. SUNDIAL ATL uses the same idea: the right answer depends on <em>when</em> you go. The sky behind the page is the real sky over Atlanta at your chosen hour.</p></div>
+    <div><p class="eyebrow">Data</p><h2>Open sources, shown honestly.</h2>
+      <p>MARTA stop accessibility (MARTA GTFS), places and wheelchair tags (OpenStreetMap volunteers), weather (Open-Meteo, 2021–2025), county lines (US Census). "Not reported" means nobody has recorded it, not that it is inaccessible. Always call first.</p></div>
+    <div><p class="eyebrow">Limits</p><h2>What we do not claim.</h2>
+      <p>This is a student prototype, not medical or legal advice. Hours and access can change, and elevators break. Heat figures are historical averages, not a forecast. AI helped write this site's code; people check the sources.</p></div>
+  </div>
+  <footer class="foot wrap"><p>SUNDIAL ATL · TSA AI Hackathon · Built from <a href="https://github.com/Tasty-Ramen2010/sundial">SUNDIAL</a> · Map data © OpenStreetMap contributors</p></footer>
+</section>
+</main>
+
+<div id="sheet" class="sheet" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="sheet-name">
+  <div class="sheet-scroll" id="sheet-scroll">
+    <button type="button" class="sheet-back" id="sheet-back">← Back to list</button>
+    <header class="sheet-head">
+      <p class="tier" id="s-tier"></p>
+      <h2 id="sheet-name"></h2>
+      <p class="sheet-cond" id="s-sub"></p>
+      <div class="sheet-actions">
+        <button type="button" class="btn" id="s-read">🔊 Read this aloud</button>
+        <a class="btn ghost" id="s-dir" target="_blank" rel="noopener">Directions</a>
+        <button type="button" class="btn ghost" id="s-print">Print trip card</button>
+      </div>
+    </header>
+    <div class="cards" id="cards"></div>
+  </div>
+</div>
+
+<nav id="dock" class="dock" aria-label="Sections">
+  <a href="#hero"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 12 17 6.5M12 6v1.5"/></svg><span>Time</span></a>
+  <a href="#plan"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/></svg><span>You</span></a>
+  <a href="#results"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg><span>Places</span></a>
+  <a href="#safety"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/></svg><span>Safety</span></a>
+</nav>
+
+<script src="vendor/d3.min.js"></script>
+<script src="vendor/topojson-client.min.js"></script>
+<script src="js/sky.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
